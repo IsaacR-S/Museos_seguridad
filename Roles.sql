@@ -1,14 +1,5 @@
 -- Creación de Roles (sin contraseña)
 
--- Rol para el administrador general del museo
--- Este rol tendrá amplios permisos para configurar y gestionar el museo, incluyendo RRHH, ingresos, eventos, etc.
-CREATE ROLE administrador_museo WITH
-  NOSUPERUSER
-  INHERIT
-  NOCREATEDB
-  NOCREATEROLE
-  NOREPLICATION;
-
 -- Rol para los curadores de arte
 -- Se encargarán de la gestión de obras, artistas, colecciones y sus mantenimientos.
 CREATE ROLE curador WITH
@@ -45,8 +36,18 @@ CREATE ROLE restaurador WITH
   NOCREATEROLE
   NOREPLICATION;
 
--- Rol para los visitantes (solo lectura de información pública)
-CREATE ROLE visitante WITH
+-- Rol para Recursos Humanos (RRHH)
+-- Gestionará la información de los empleados, su formación y su historial en el museo.
+CREATE ROLE personal_rrhh WITH
+  NOSUPERUSER
+  INHERIT
+  NOCREATEDB
+  NOCREATEROLE
+  NOREPLICATION;
+
+-- Nuevo rol para el Director
+-- Tendrá permisos específicos sobre la estructura organizacional, empleados, historial y resúmenes.
+CREATE ROLE director WITH
   NOSUPERUSER
   INHERIT
   NOCREATEDB
@@ -55,43 +56,34 @@ CREATE ROLE visitante WITH
 
 -- Creación de Usuarios y Asignación de Roles
 
--- Usuario para el administrador del museo
-CREATE USER user_admin WITH LOGIN PASSWORD 'your_secure_admin_password';
-GRANT administrador_museo TO user_admin;
-
 -- Usuario para un curador
-CREATE USER user_curador WITH LOGIN PASSWORD 'your_secure_curator_password';
+CREATE USER user_curador WITH LOGIN PASSWORD '1234';
 GRANT curador TO user_curador;
 
 -- Usuario para el personal de seguridad y mantenimiento
-CREATE USER user_seg_mant WITH LOGIN PASSWORD 'your_secure_security_password';
+CREATE USER user_seg_mant WITH LOGIN PASSWORD '1234';
 GRANT personal_seguridad_mantenimiento TO user_seg_mant;
 
 -- Usuario para un operador de taquilla
-CREATE USER user_taquilla WITH LOGIN PASSWORD 'your_secure_cashier_password';
+CREATE USER user_taquilla WITH LOGIN PASSWORD '1234';
 GRANT operador_taquilla TO user_taquilla;
 
 -- Usuario para un restaurador
-CREATE USER user_restaurador WITH LOGIN PASSWORD 'your_secure_restorer_password';
+CREATE USER user_restaurador WITH LOGIN PASSWORD '1234';
 GRANT restaurador TO user_restaurador;
 
--- Usuario para un visitante
-CREATE USER user_visitante WITH LOGIN PASSWORD 'your_secure_visitor_password';
-GRANT visitante TO user_visitante;
+-- Usuario para el personal de RRHH
+CREATE USER user_rrhh WITH LOGIN PASSWORD '1234';
+GRANT personal_rrhh TO user_rrhh;
+
+-- Usuario para el Director
+CREATE USER user_director WITH LOGIN PASSWORD '1234';
+GRANT director TO user_director;
 
 
 -- Asignación de Privilegios a los Roles
 
--- 1. Privilegios para 'administrador_museo'
--- Tendrá todos los permisos (SELECT, INSERT, UPDATE, DELETE) sobre la mayoría de las tablas.
--- Esto incluye la gestión de museos, lugares, empleados (profesionales), formación, idiomas,
--- estructura organizacional y física, colecciones, horarios, eventos, tickets históricos y resúmenes.
--- Este rol es el administrador de la aplicación y necesita control total sobre los datos del museo.
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO administrador_museo;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO administrador_museo;
-
-
--- 2. Privilegios para 'curador'
+-- 1. Privilegios para 'curador'
 -- Gestionará obras, artistas, colecciones y mantenimiento de obras.
 
 -- Obras de Arte y Artistas: CRUD completo
@@ -129,9 +121,10 @@ GRANT SELECT ON lugar TO curador;
 GRANT SELECT ON estructura_organizacional TO curador;
 GRANT SELECT ON estructura_fisica TO curador;
 GRANT SELECT ON sala_exposicion TO curador;
+GRANT SELECT ON evento TO curador; -- Para ver las exposiciones y eventos
 
 
--- 3. Privilegios para 'personal_seguridad_mantenimiento'
+-- 2. Privilegios para 'personal_seguridad_mantenimiento'
 -- Solo gestionará las asignaciones mensuales de vigilancia y mantenimiento de instalaciones.
 
 -- Asignaciones Mensuales: CRUD completo
@@ -147,7 +140,7 @@ GRANT SELECT ON sala_exposicion TO personal_seguridad_mantenimiento;
 GRANT SELECT ON hist_cierre TO personal_seguridad_mantenimiento;
 
 
--- 4. Privilegios para 'operador_taquilla'
+-- 3. Privilegios para 'operador_taquilla'
 -- Gestionará la venta de tickets y el registro de asistencia a eventos.
 
 -- Tickets: INSERT (para registrar nuevas ventas)
@@ -165,7 +158,7 @@ GRANT SELECT ON horario TO operador_taquilla;
 GRANT SELECT ON museo TO operador_taquilla;
 
 
--- 5. Privilegios para 'restaurador'
+-- 4. Privilegios para 'restaurador'
 -- Registrará el historial de mantenimiento realizado.
 
 -- Histórico de Mantenimiento Realizado: CRUD completo
@@ -177,36 +170,85 @@ GRANT SELECT ON mantenimiento_obra TO restaurador;
 GRANT SELECT ON obra TO restaurador;
 GRANT SELECT ON historico_obra_movimiento TO restaurador;
 
--- Empleados Profesionales e Histórico de Empleados: Solo lectura (para registrar quién realizó el mantenimiento)
-GRANT SELECT ON empleado_profesional TO restaurador;
-GRANT SELECT ON historico_empleado TO restaurador;
-
 -- Estructura Organizacional y Museo: Solo lectura (contexto)
 GRANT SELECT ON museo TO restaurador;
 GRANT SELECT ON estructura_organizacional TO restaurador;
 
 
--- 6. Privilegios para 'visitante'
--- Solo tendrá acceso de lectura a la información pública del museo.
+-- 5. Privilegios para 'personal_rrhh'
+-- Gestionará la información de los empleados, su formación y su historial en el museo.
 
-GRANT SELECT ON lugar TO visitante;
-GRANT SELECT ON obra TO visitante;
-GRANT SELECT ON artista TO visitante;
-GRANT SELECT ON art_obra TO visitante;
-GRANT SELECT ON museo TO visitante;
-GRANT SELECT ON resumen_hist TO visitante;
-GRANT SELECT ON evento TO visitante;
-GRANT SELECT ON horario TO visitante;
-GRANT SELECT ON estructura_organizacional TO visitante;
-GRANT SELECT ON coleccion_permanente TO visitante;
-GRANT SELECT ON estructura_fisica TO visitante;
-GRANT SELECT ON sala_exposicion TO visitante;
-GRANT SELECT ON col_sal TO visitante;
-GRANT SELECT ON hist_cierre TO visitante;
-GRANT SELECT ON historico_obra_movimiento TO visitante;
+-- Empleados Profesionales: CRUD completo
+GRANT SELECT, INSERT, UPDATE, DELETE ON empleado_profesional TO personal_rrhh;
+GRANT USAGE ON SEQUENCE seq_empleado_prof TO personal_rrhh;
+
+-- Formación Profesional: CRUD completo
+GRANT SELECT, INSERT, UPDATE, DELETE ON formacion_profesional TO personal_rrhh;
+GRANT USAGE ON SEQUENCE seq_formacion TO personal_rrhh;
+
+-- Idiomas y relación Empleado-Idioma: CRUD completo
+GRANT SELECT, INSERT, UPDATE, DELETE ON idioma TO personal_rrhh;
+GRANT USAGE ON SEQUENCE seq_idioma TO personal_rrhh;
+GRANT SELECT, INSERT, UPDATE, DELETE ON emp_idi TO personal_rrhh;
+
+-- Histórico de Empleado (roles y permanencia): CRUD completo
+GRANT SELECT, INSERT, UPDATE, DELETE ON historico_empleado TO personal_rrhh;
+
+-- Empleados de Mantenimiento y Vigilancia: CRUD completo (gestión de este tipo de personal)
+GRANT SELECT, INSERT, UPDATE, DELETE ON empleado_mantenimiento_vigilancia TO personal_rrhh;
+GRANT USAGE ON SEQUENCE seq_empleado_mv TO personal_rrhh;
+
+-- Tablas de contexto (solo lectura):
+GRANT SELECT ON museo TO personal_rrhh;
+GRANT SELECT ON lugar TO personal_rrhh;
+GRANT SELECT ON estructura_organizacional TO personal_rrhh;
+GRANT SELECT ON estructura_fisica TO personal_rrhh;
+GRANT SELECT ON sala_exposicion TO personal_rrhh;
+GRANT SELECT ON asignacion_mensual TO personal_rrhh; -- Para ver asignaciones de personal de seguridad/mantenimiento
+
+-- 6. Privilegios para 'director'
+-- CRUD de estructura_organizacional, empleado_profesional y historico_empleado.
+-- SELECT, INSERT, UPDATE en resumen_hist.
+-- SELECT en todas las demás tablas.
+
+-- CRUD en tablas específicas:
+GRANT SELECT, INSERT, UPDATE, DELETE ON estructura_organizacional TO director;
+GRANT USAGE ON SEQUENCE seq_estructura_org TO director; -- Necesario para INSERT
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON empleado_profesional TO director;
+GRANT USAGE ON SEQUENCE seq_empleado_prof TO director; -- Necesario para INSERT
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON historico_empleado TO director;
+
+-- SELECT, INSERT, UPDATE en resumen_hist:
+GRANT SELECT, INSERT, UPDATE ON resumen_hist TO director;
+
+-- SELECT en todas las demás tablas:
+GRANT SELECT ON lugar TO director;
+GRANT SELECT ON obra TO director;
+GRANT SELECT ON artista TO director;
+GRANT SELECT ON art_obra TO director;
+GRANT SELECT ON museo TO director;
+GRANT SELECT ON tipo_ticket_historico TO director;
+GRANT SELECT ON evento TO director;
+GRANT SELECT ON ticket TO director;
+GRANT SELECT ON horario TO director;
+GRANT SELECT ON formacion_profesional TO director;
+GRANT SELECT ON idioma TO director;
+GRANT SELECT ON emp_idi TO director;
+GRANT SELECT ON coleccion_permanente TO director;
+GRANT SELECT ON estructura_fisica TO director;
+GRANT SELECT ON sala_exposicion TO director;
+GRANT SELECT ON col_sal TO director;
+GRANT SELECT ON hist_cierre TO director;
+GRANT SELECT ON empleado_mantenimiento_vigilancia TO director;
+GRANT SELECT ON asignacion_mensual TO director;
+GRANT SELECT ON historico_obra_movimiento TO director;
+GRANT SELECT ON mantenimiento_obra TO director;
+GRANT SELECT ON historico_mantenimiento_realizado TO director;
 
 
 -- Asegúrate de que los usuarios creados con estos roles puedan conectarse a la base de datos.
--- Por ejemplo, para permitir que 'user_admin' se conecte a una base de datos llamada 'museo_db':
--- GRANT CONNECT ON DATABASE museo_db TO user_admin;
+-- Por ejemplo, para permitir que 'user_curador' se conecte a una base de datos llamada 'museo_db':
+-- GRANT CONNECT ON DATABASE museo_db TO user_curador;
 -- Repite esto para cada usuario que necesite conectarse.
